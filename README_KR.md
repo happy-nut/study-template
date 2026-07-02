@@ -1,0 +1,57 @@
+# study-template
+
+*[English](README.md) · 한국어*
+
+**무엇이든** 라이트너 박스로 공부하는 범용 학습 레포 템플릿입니다. 토익, 자격증, 면접, 역사, 의학 — 주제만 다를 뿐 학습법은 그대로입니다. AI 코딩 에이전트가 별도 프로그램·노트 준비 없이 학습 코치로 직접 동작합니다.
+
+## 어떤 에이전트에서든 동작합니다
+
+학습 지침의 정본은 **`AGENTS.md`** 한 파일입니다. 주요 AI 코딩 도구가 이 파일을 인식합니다.
+
+| 에이전트 | 읽는 파일 | 처리 |
+|---|---|---|
+| OpenAI Codex · Cursor · GitHub Copilot 등 | `AGENTS.md` | 네이티브로 읽습니다 |
+| Claude Code | `CLAUDE.md` → `@AGENTS.md` import | 자동 |
+| Gemini CLI | `GEMINI.md` → `AGENTS.md`를 읽으라 지시 | 자동 |
+
+`CLAUDE.md`·`GEMINI.md`는 얇은 포인터일 뿐입니다. **지침을 고칠 땐 `AGENTS.md`만 고치시면 됩니다.**
+
+## 어떻게 쓰나요
+
+1. **이 레포를 템플릿으로 새 레포를 생성합니다** — GitHub "Use this template" 버튼, 또는
+   `gh repo create my-study --template happy-nut/study-template --private`
+2. 새 레포에서 AI 코딩 에이전트(Claude Code · Codex · Cursor · Gemini CLI 등)를 실행하고 **"공부 시작하자"** 라고 하십시오.
+3. 코치가 무엇을 공부하는지 짧게 인터뷰하고 `PROFILE.md`를 채웁니다 (딱 한 번).
+4. 이후 묻거나 막히는 항목이 자동으로 카드가 되어 쌓이고, 라이트너 간격으로 다시 출제됩니다.
+
+## 구조
+
+| 파일 | 역할 | 바뀌나요? |
+|------|------|-----------|
+| `AGENTS.md` | 학습 엔진 정본 — 박스·왜?체인/재인드릴·망각곡선 규칙 | ❌ 절대 안 바뀝니다 |
+| `CLAUDE.md` / `GEMINI.md` | 각 에이전트 진입점 (AGENTS.md 포인터) | ❌ |
+| `.claude/skills/` | **프로젝트 스코프** 스킬(예: `mock-interview`) — 레포에 함께 담겨 갑니다 | ❌ (엔진의 일부) |
+| `PROFILE.md` | 무엇을 공부하는가 (주제·목표·출제 범위) | ✅ 유일하게 채우는 파일 |
+| `state.tsv` | 카드별 통계 (박스 위치는 디렉토리가 진실) | 자동 |
+| `box1`~`box4` | 라이트너 박스 | 자동 |
+
+## 특징
+
+- **학습 유형 자동 판단** — 카드마다 코치가 `recall`(재인 드릴) / `concept`(왜? 체인) / `mixed` 중 무엇인지 스스로 결정합니다. **사용자가 고르지 않습니다** — AI가 카드 성격을 보고 판정합니다.
+- **망각 곡선 반영** — 자주 틀린 카드는 더 자주, 오래 방치된 카드는 더 먼저 출제됩니다.
+- **자동 카드화** — 노트를 미리 만들지 않습니다. 대화에서 카드가 쌓입니다.
+- **`mock-interview` 스킬** — 박스가 텅 비었을 때 `"면접 난사"`(또는 Claude Code에서 `/mock-interview`)라고 하시면, 특정 면접관 페르소나가 꼬리 질문을 쉬지 않고 쏟아내며 모르는 지점을 찾아 그 자리에서 카드로 시딩합니다. 빠른 콜드 스타트용입니다. 이 스킬은 **프로젝트 스코프**입니다 — 이 레포의 `.claude/skills/`에 들어 있어 파생 레포마다 함께 갑니다. 유저 스코프(`~/.claude/skills/`)에는 설치하지 **마십시오**.
+
+## 템플릿에 새 기능이 추가되면 (파생 레포 업데이트)
+
+GitHub 템플릿은 fork가 아니라서 **자동 동기화 연결이 없습니다.** 다만 엔진·스킬과 사용자 데이터가 파일 단위로 분리돼 있어, 그 파일만 골라 받으면 카드·프로필을 그대로 둔 채 업데이트됩니다. 엔진 버전은 `AGENTS.md` 맨 위 `<!-- 엔진 버전: X -->` 에 있습니다.
+
+**방법 A — git (권장, 스킬까지 함께 동기화)**
+```
+git remote add template https://github.com/happy-nut/study-template.git   # 최초 1회
+git fetch template
+git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md .claude
+```
+
+**방법 B — 코치에게 시키기**
+파생 레포에서 **"엔진 업데이트"** 라고 하시면, 코치가 최신 버전을 확인하고 뒤처져 있으면 엔진 파일과 **`.claude/skills/`** 까지 받아 덮어씁니다. (`PROFILE.md`·`box*`·`state.tsv`는 건드리지 않습니다.)

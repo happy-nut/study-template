@@ -1,61 +1,57 @@
 # study-template
 
-**무엇이든** 라이트너 박스로 공부하는 범용 학습 레포 템플릿.
-AI 코딩 에이전트가 학습 코치로 직접 동작한다. 별도 프로그램·노트 준비가 필요 없다.
+*English · [한국어](README_KR.md)*
 
-토익, 자격증, 면접, 역사, 의학 — 주제만 다를 뿐 학습법은 그대로다.
+A universal **Leitner-box study repo template**. Study *anything* — TOEIC, certifications, interviews, history, medicine. Your AI coding agent acts as the study coach directly; no separate app or note-taking needed. Only the subject changes — the learning method stays the same.
 
-## 어떤 에이전트에서든 동작한다
+## Works with any agent
 
-학습 지침의 정본은 **`AGENTS.md`** 한 파일이다. 주요 AI 코딩 도구가 이 파일을 인식한다:
+The single source of truth for the coaching instructions is **`AGENTS.md`**. Major AI coding tools recognize it:
 
-| 에이전트 | 읽는 파일 | 처리 |
+| Agent | Reads | How |
 |---|---|---|
-| OpenAI Codex · Cursor · GitHub Copilot 등 | `AGENTS.md` | 네이티브로 읽음 |
-| Claude Code | `CLAUDE.md` → `@AGENTS.md` import | 자동 |
-| Gemini CLI | `GEMINI.md` → `AGENTS.md` 읽으라 지시 | 자동 |
+| OpenAI Codex · Cursor · GitHub Copilot, etc. | `AGENTS.md` | natively |
+| Claude Code | `CLAUDE.md` → `@AGENTS.md` import | automatic |
+| Gemini CLI | `GEMINI.md` → instructed to read `AGENTS.md` | automatic |
 
-`CLAUDE.md`·`GEMINI.md`는 얇은 포인터일 뿐이다. **지침을 고칠 땐 `AGENTS.md`만 고친다.**
+`CLAUDE.md` and `GEMINI.md` are thin pointers. **To change the instructions, edit `AGENTS.md` only.**
 
-## 어떻게 쓰나
+## How to use
 
-1. **이 레포를 템플릿으로 새 레포 생성** — GitHub "Use this template" 버튼, 또는
+1. **Create a new repo from this template** — the GitHub "Use this template" button, or
    `gh repo create my-study --template happy-nut/study-template --private`
-2. 새 레포에서 AI 코딩 에이전트(Claude Code · Codex · Cursor · Gemini CLI 등) 실행 → **"공부 시작하자"**
-3. 코치가 무엇을 공부할지 짧게 인터뷰하고 `PROFILE.md`를 채운다 (딱 한 번)
-4. 이후 묻고 막히는 항목이 자동으로 카드가 되어 쌓이고, 라이트너 간격으로 다시 출제된다
+2. In the new repo, launch an AI coding agent (Claude Code · Codex · Cursor · Gemini CLI, etc.) → say **"let's start studying"**
+3. The coach interviews you briefly about what you're studying and fills in `PROFILE.md` (one time only)
+4. From then on, whatever you ask about or get stuck on automatically becomes a card, and resurfaces at Leitner intervals
 
-## 구조
+## Structure
 
-| 파일 | 역할 | 바뀌나? |
-|------|------|---------|
-| `AGENTS.md` | 학습 엔진 정본 — 박스·왜?체인/재인드릴·망각곡선 규칙 | ❌ 절대 안 바뀜 |
-| `CLAUDE.md` / `GEMINI.md` | 각 에이전트 진입점 (AGENTS.md 포인터) | ❌ |
-| `PROFILE.md` | 무엇을 공부하는가 (주제·목표·출제 범위) | ✅ 유일하게 바뀌는 파일 |
-| `state.tsv` | 카드별 통계 (박스 위치는 디렉토리가 진실) | 자동 |
-| `box1`~`box4` | 라이트너 박스 | 자동 |
+| File | Role | Changes? |
+|------|------|----------|
+| `AGENTS.md` | Learning-engine source of truth — boxes, why-chain / recall drill, forgetting curve | ❌ never |
+| `CLAUDE.md` / `GEMINI.md` | Per-agent entry points (pointers to AGENTS.md) | ❌ |
+| `.claude/skills/` | **Project-scoped** skills (e.g. `mock-interview`) — ship with the repo | ❌ (part of the engine) |
+| `PROFILE.md` | What you're studying (subject · goal · question scope) | ✅ the only file you fill in |
+| `state.tsv` | Per-card stats (box location is decided by the directory) | automatic |
+| `box1`~`box4` | Leitner boxes | automatic |
 
-## 템플릿에 새 기능이 추가되면 (파생 레포 업데이트)
+## Features
 
-GitHub 템플릿은 fork가 아니라서 **자동 동기화 연결이 없다.** 엔진과 사용자 데이터가 파일 단위로
-분리돼 있으므로, 파생 레포는 엔진 파일만 골라 최신본을 받으면 카드·프로필을 그대로 둔 채 업데이트된다.
+- **Automatic card typing** — the coach decides per card whether it's `recall` (recognition drill), `concept` (why-chain), or `mixed`. **You don't pick** — the AI judges from the card's nature.
+- **Forgetting curve** — frequently-missed cards resurface sooner; long-neglected cards come up first.
+- **Auto-carding** — no pre-made notes. Cards accumulate from the conversation.
+- **`mock-interview` skill** — when the boxes are empty, say `"mock interview"` / `"면접 난사"` (or `/mock-interview` in Claude Code) and a specific interviewer persona fires off relentless tail-questions, hunts the edge of what you don't know, and seeds cards on the spot. Built for a fast cold start. It is **project-scoped** — it lives in this repo's `.claude/skills/`, so it travels with every derived repo. Do **not** install it to user scope (`~/.claude/skills/`).
 
-**방법 A — 코치에게 시키기 (가장 간단)**
-파생 레포에서 `"엔진 업데이트"` 라고 하면, 코치가 이 공개 템플릿에서 최신 엔진을 받아 `AGENTS.md`·
-`CLAUDE.md`·`GEMINI.md`만 덮어쓰고 버전 변경 요약을 알려준다. (`PROFILE.md`·`box*`·`state.tsv`은 안 건드림)
+## Updating a derived repo when the template gains features
 
-**방법 B — git remote**
+A GitHub template is **not a fork** — there's no automatic sync link. But the engine and skills are file-separated from your data, so you can pull just those and keep your cards and profile untouched. The engine version lives at the top of `AGENTS.md` as `<!-- engine version: X -->`.
+
+**Method A — git (recommended; syncs skills too)**
 ```
-git remote add template https://github.com/happy-nut/study-template.git
+git remote add template https://github.com/happy-nut/study-template.git   # once
 git fetch template
-git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md
+git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md .claude
 ```
 
-엔진에는 `AGENTS.md` 맨 위에 `<!-- 엔진 버전: X -->` 가 있어 현재/최신 버전을 비교할 수 있다.
-
-## 특징
-
-- **학습 유형 자동 판단** — 암기형(재인 드릴) / 이해형(왜? 체인) / 혼합형을 **카드마다 코치가 스스로** 결정한다. 사용자가 고르지 않는다.
-- **망각 곡선 반영** — 자주 틀린 카드는 더 자주, 오래 방치된 카드는 더 먼저 출제.
-- **자동 카드화** — 노트를 미리 만들지 않는다. 대화에서 카드가 쌓인다.
-- **면접 난사 스킬** — 박스가 텅 비었을 때 `"면접 난사"`(또는 Claude Code에서 `/mock-interview`)라고 하면, 특정 면접관 페르소나가 꼬리 질문을 쏟아내며 모르는 지점을 찾아 그 자리에서 카드로 시딩한다. 빠른 콜드 스타트용.
+**Method B — ask the coach**
+Say **"update engine"** in the derived repo. The coach checks the latest version and, if you're behind, pulls the engine files **and `.claude/skills/`** — leaving `PROFILE.md`, `box*`, and `state.tsv` alone.

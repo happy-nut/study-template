@@ -1,6 +1,6 @@
 # 라이트너 학습 시스템 (범용 템플릿)
 
-<!-- 엔진 버전: 1.2.0 -->
+<!-- 엔진 버전: 1.2.1 -->
 
 > **이 파일이 학습 엔진의 정본(canonical)이다.** 어떤 AI 코딩 에이전트든 — Claude Code, OpenAI Codex,
 > Cursor, GitHub Copilot, Gemini CLI 등 — 이 `AGENTS.md`를 읽고 그대로 따르면 학습 코치로 동작한다.
@@ -309,29 +309,22 @@ created: 2026-07-01
 ## 엔진 업데이트 (템플릿에 새 기능이 추가됐을 때)
 
 이 레포는 공개 템플릿 `happy-nut/study-template`에서 파생됐다. GitHub 템플릿은 fork가 아니라서
-**자동 동기화 연결이 없다.** 엔진 파일(`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)만 골라서 최신본을 받으면 된다.
+**자동 동기화 연결이 없다.** 엔진(`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)과 **프로젝트 스코프 스킬(`.claude/skills/`)** 만 골라서 최신본을 받으면 된다.
 **`PROFILE.md`, `box*/`, `state.tsv`(= 사용자 데이터)은 절대 건드리지 않는다.**
 
-사용자가 **"엔진 업데이트"** / **"update engine"** 이라고 하면 코치는 다음을 수행한다:
+> 스킬은 **프로젝트 스코프**다 — 레포 안 `.claude/skills/`에 담겨 파생 레포마다 함께 간다. 유저 스코프(`~/.claude/skills/`)에 설치하지 않는다.
 
-1. 최신 엔진 버전을 확인한다:
-   ```
-   curl -fsSL https://raw.githubusercontent.com/happy-nut/study-template/master/AGENTS.md | grep '엔진 버전'
-   ```
-2. 위 맨 윗줄 `<!-- 엔진 버전: X -->` 과 비교한다. 같으면 "이미 최신(vX)"이라 알리고 종료.
-3. 다르면 엔진 파일 3개만 최신본으로 덮어쓴다:
-   ```
-   base=https://raw.githubusercontent.com/happy-nut/study-template/master
-   curl -fsSL $base/AGENTS.md  -o AGENTS.md
-   curl -fsSL $base/CLAUDE.md  -o CLAUDE.md
-   curl -fsSL $base/GEMINI.md  -o GEMINI.md
-   ```
-4. 버전 변화(vX→vY)와 새로 생긴 규칙 요약을 한눈에 출력한다. 필요하면 커밋한다.
-
-**git을 선호하면** 템플릿을 remote로 붙여 엔진 파일만 체크아웃할 수도 있다 (README 참고):
+**방법 A — git (권장, 스킬까지 한 번에 동기화)**
 ```
-git remote add template https://github.com/happy-nut/study-template.git
+git remote add template https://github.com/happy-nut/study-template.git   # 최초 1회
 git fetch template
-git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md
+git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md .claude
 ```
-엔진과 사용자 데이터가 파일 단위로 분리돼 있으므로 이 방식은 카드·프로필과 충돌하지 않는다.
+엔진·스킬과 사용자 데이터가 파일 단위로 분리돼 있어 카드·프로필과 충돌하지 않는다.
+
+**방법 B — 코치에게 "엔진 업데이트" / "update engine"** 이라고 하면 코치는:
+
+1. 최신 버전 확인: `curl -fsSL https://raw.githubusercontent.com/happy-nut/study-template/master/AGENTS.md | grep '엔진 버전'`
+2. 맨 윗줄 `<!-- 엔진 버전: X -->` 과 비교. 같으면 "이미 최신(vX)"이라 알리고 종료.
+3. 다르면 위 **방법 A(git)** 를 실행해 엔진 3파일 + `.claude/skills/`까지 한 번에 받는다. (git이 없는 환경이면 raw URL로 `AGENTS.md`·`CLAUDE.md`·`GEMINI.md` 및 알려진 스킬 파일을 개별 다운로드)
+4. 버전 변화(vX→vY)와 새로 생긴 규칙·스킬 요약을 출력한다. 필요하면 커밋한다.
