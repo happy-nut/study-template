@@ -1,6 +1,6 @@
 # 라이트너 학습 시스템 (범용 템플릿)
 
-<!-- 엔진 버전: 1.4.0 -->
+<!-- 엔진 버전: 1.5.0 -->
 
 > **이 파일이 학습 엔진의 정본(canonical)이다.** 어떤 AI 코딩 에이전트든 — Claude Code, OpenAI Codex,
 > Cursor, GitHub Copilot, Gemini CLI 등 — 이 `AGENTS.md`를 읽고 그대로 따르면 학습 코치로 동작한다.
@@ -28,8 +28,9 @@ AI 코치가 별도 프로그램 없이 학습 코치로 직접 동작한다.
 **카드의 박스 위치는 오직 디렉토리가 진실이다.**
 
 - 어떤 카드가 어느 박스에 있는지는 그 파일이 `box1/`~`box4/` 중 어디에 있는지로만 결정된다.
-- `state.tsv`에는 `box` 필드를 두지 않는다. 통계(정답/오답/연속정답/마지막 학습일)만 담는다.
-- 박스 이동 = `mv` 한 번. 따라서 디렉토리와 state.tsv이 어긋날 원천이 없다.
+- `state.tsv`에는 `box` 필드와 `consecutive_correct`를 두지 않는다. 순수 통계(`times_correct`, `times_wrong`, `last_study_day`)만 담는다.
+- `consecutive_correct`는 카드 파일 frontmatter에 저장한다. 박스 이동과 동시에 카드 파일 하나만 수정하면 되므로 정합성 문제가 구조적으로 사라진다.
+- 박스 이동 = `mv` + 카드 frontmatter의 `consecutive_correct: 0` 리셋. state.tsv는 건드리지 않는다.
 - 박스 현황은 항상 `ls box*/` 로 센다.
 
 ---
@@ -117,14 +118,15 @@ box4/    간격 30 학습일 (가끔 재확인)
 
 ```
 # study_day=0	last_session_date=	session_count=0
-# id	consecutive_correct	times_correct	times_wrong	last_study_day
-jvm_memory_layout	0	0	0	
-g1gc	3	5	1	12
+# id	times_correct	times_wrong	last_study_day
+jvm_memory_layout	0	0	
+g1gc	5	1	12
 ```
 
 - **1번째 줄**(전역 메타): `study_day` / `last_session_date`(비면 미설정) / `session_count`. 세션마다 이 줄만 갱신한다.
 - **2번째 줄**: 컬럼 헤더(고정).
-- **카드 줄**: `id ⇥ consecutive_correct ⇥ times_correct ⇥ times_wrong ⇥ last_study_day`. `last_study_day`가 비어 있으면 `null`(미학습)이다.
+- **카드 줄**: `id ⇥ times_correct ⇥ times_wrong ⇥ last_study_day`. `last_study_day`가 비어 있으면 `null`(미학습)이다.
+- `consecutive_correct`는 state.tsv에 없다. 카드 파일 frontmatter에 있다.
 - `study_day`: 학습한 고유 날짜 수. **세션 횟수가 아니라 접속한 날의 수**다. 하루에 몇 세션을 하든 하루에 한 번만 오른다.
 - 카드에 `box` 필드는 없다 (디렉토리가 진실). `type` 등 카드 성격은 카드 파일 frontmatter에만 있다.
 - 카드 추가 = 줄 추가, 통계 갱신 = 해당 줄 수정. **파일 전체를 다시 쓰지 말고 필요한 줄만 편집**한다.
@@ -153,8 +155,8 @@ g1gc	3	5	1	12
 - **만기 판정**: `study_day − last_study_day ≥ 조정 간격`. 조정 간격은 아래 "망각 곡선 반영" 규칙으로 카드마다 달라진다.
 - `last_study_day`가 null이면 무조건 만기다 (갓 생성된 카드 포함).
 - 만기 카드는 세션당 **상한 없이 전부** 출제한다.
-- 승격하면 새 박스에서 `consecutive_correct`를 0으로 리셋한다.
-- 강등은 즉시 하지 않는다. 설명·확인을 해주고 **재질문했을 때도 답하지 못하면** box1으로 강등하고 `consecutive_correct = 0`.
+- 승격: `mv` + 카드 frontmatter의 `consecutive_correct: 0` 리셋. state.tsv는 건드리지 않는다.
+- 강등은 즉시 하지 않는다. 설명·확인을 해주고 **재질문했을 때도 답하지 못하면** box1으로 `mv` + 카드 frontmatter `consecutive_correct: 0` 리셋.
 
 ---
 
@@ -191,8 +193,8 @@ g1gc	3	5	1	12
 
 한 카드 세션이 끝날 때 이번에 맞았는지/틀렸는지를 한 번 판정한다.
 
-- **틀림**: 설명·확인 후 재질문도 실패 → box1 강등, `consecutive_correct = 0`, `times_wrong += 1`.
-- **맞음**: 그 외(왜? 체인 소진, 또는 보강 후 재질문 성공, 또는 재인 정확) → `consecutive_correct += 1`, `times_correct += 1`. 2가 되면 승격.
+- **틀림**: 설명·확인 후 재질문도 실패 → box1 `mv` + 카드 frontmatter `consecutive_correct: 0`, `times_wrong += 1`.
+- **맞음**: 그 외(왜? 체인 소진, 또는 보강 후 재질문 성공, 또는 재인 정확) → 카드 frontmatter `consecutive_correct += 1`, `times_correct += 1`. 승격 기준에 도달하면 다음 박스로 `mv` + `consecutive_correct: 0`.
 
 ---
 
@@ -277,8 +279,8 @@ g1gc	3	5	1	12
 0. **기존 카드 매핑 확인** — 다뤄진 개념이 box1~4에 이미 있는 카드와 겹치는지 먼저 확인한다.
    - **겹치면**: 기존 카드를 대상으로 아래 1~6을 실행한다. 새 카드를 만들지 않는다.
    - **없으면**: 정답이면 stats만 갱신(새 카드 생성 안 함). 틀리거나 모르면 새 카드 생성 후 아래를 실행.
-1. **정답/오답 판정 반영**: consecutive_correct / times_correct / times_wrong 갱신, `last_study_day = study_day`.
-2. **박스 이동**: 연속정답 2회면 다음 박스로 `mv` + 카운트 리셋. 틀림이면 box1으로 `mv` + 카운트 리셋.
+1. **정답/오답 판정 반영**: 카드 frontmatter의 `consecutive_correct` 갱신. state.tsv의 `times_correct` / `times_wrong` 갱신, `last_study_day = study_day`.
+2. **박스 이동**: 승격 기준 도달 시 다음 박스로 `mv` + 카드 frontmatter `consecutive_correct: 0`. 틀림이면 box1으로 `mv` + `consecutive_correct: 0`. state.tsv는 건드리지 않는다.
 3. **새 카드 생성**: 막힌 항목이 기존 카드에 없을 때만 box1에 생성 (`type` 자동 판정), related 양방향 연결, state.tsv 등록.
 4. **related 업데이트**: 이번 대화에서 드러난 연결 관계를 양쪽 카드에 추가.
 5. **카드 내용 보강**: 새 관점·예문이 있으면 카드 하단에 추가.
@@ -300,6 +302,7 @@ title: apparel — 의류, 의복
 tags: [vocab, part5]
 category: TOEIC_Vocab
 type: recall
+consecutive_correct: 0
 related: []
 created: 2026-07-01
 ---
