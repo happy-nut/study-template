@@ -1,6 +1,6 @@
 # 라이트너 학습 시스템 (범용 템플릿)
 
-<!-- 엔진 버전: 1.10.0 -->
+<!-- 엔진 버전: 1.11.0 -->
 
 > **이 파일이 학습 엔진의 정본(canonical)이다.** 어떤 AI 코딩 에이전트든 — Claude Code, OpenAI Codex,
 > Cursor, GitHub Copilot, Gemini CLI 등 — 이 `AGENTS.md`를 읽고 그대로 따르면 학습 코치로 동작한다.
@@ -27,11 +27,12 @@ AI 코치가 별도 프로그램 없이 학습 코치로 직접 동작한다.
 
 ## 데이터 모델 — 단일 진실 규칙 (가장 중요)
 
-**카드의 박스 위치는 오직 디렉토리가 진실이다.**
+**모든 상태는 파일 자체에만 있다. 별도 DB나 인덱스 파일은 없다.**
 
-- 어떤 카드가 어느 박스에 있는지는 그 파일이 `box1/`~`box4/` 중 어디에 있는지로만 결정된다.
-- `state.tsv`에는 `box` 필드를 두지 않는다. 순수 통계(`times_correct`, `times_wrong`, `last_study_day`)만 담는다.
-- 박스 이동 = `mv` 한 번으로 완결. state.tsv와 카드 파일은 건드리지 않는다.
+- **박스 위치**: 카드 파일이 `box1/`~`box4/` 중 어디에 있는지로만 결정. 박스 이동 = `mv` 한 번으로 완결.
+- **카드 통계** (`times_correct`, `times_wrong`, `last_study_day`): 카드 파일 frontmatter에 직접 저장.
+- **전역 메타** (`study_day`, `last_session_date`, `session_count`): `PROFILE.md` frontmatter에 저장.
+- **`state.tsv` 없음** — 별도 통계 파일은 카드와 정합성 문제를 만들므로 사용하지 않는다.
 - 박스 현황은 항상 `ls box*/` 로 센다.
 
 ---
@@ -113,23 +114,21 @@ box4/    간격 30 학습일 (가끔 재확인)
 
 ---
 
-## state.tsv 형식 (통계 저장 — 토큰 절약을 위해 TSV)
+## PROFILE.md frontmatter — 전역 메타
 
-통계는 `state.tsv`에 **탭 구분, 카드당 한 줄**로 담는다. JSON이 아니라 TSV인 이유는 매 세션 전량을 읽기 때문에 토큰을 아끼려는 것이다. `#`로 시작하는 줄은 주석/헤더다.
+전역 메타는 `PROFILE.md` 상단 frontmatter에 저장한다.
 
+```yaml
+---
+study_day: 0
+last_session_date: ""
+session_count: 0
+---
 ```
-# study_day=0	last_session_date=	session_count=0
-# id	times_correct	times_wrong	last_study_day
-jvm_memory_layout	0	0	
-g1gc	5	1	12
-```
 
-- **1번째 줄**(전역 메타): `study_day` / `last_session_date`(비면 미설정) / `session_count`. 세션마다 이 줄만 갱신한다.
-- **2번째 줄**: 컬럼 헤더(고정).
-- **카드 줄**: `id ⇥ times_correct ⇥ times_wrong ⇥ last_study_day`. `last_study_day`가 비어 있으면 `null`(미학습)이다.
 - `study_day`: 학습한 고유 날짜 수. **세션 횟수가 아니라 접속한 날의 수**다. 하루에 몇 세션을 하든 하루에 한 번만 오른다.
-- 카드에 `box` 필드는 없다 (디렉토리가 진실). `type` 등 카드 성격은 카드 파일 frontmatter에만 있다.
-- 카드 추가 = 줄 추가, 통계 갱신 = 해당 줄 수정. **파일 전체를 다시 쓰지 말고 필요한 줄만 편집**한다.
+- `last_session_date`: 마지막 학습 날짜 (비어 있으면 미학습).
+- `session_count`: 누적 세션 수.
 
 ---
 
@@ -140,6 +139,7 @@ g1gc	5	1	12
 1. 오늘 날짜를 구한다.
 2. `오늘 날짜 != last_session_date` 이면 `study_day += 1`, `last_session_date = 오늘`.
 3. 같은 날 두 번째 세션이면 study_day는 그대로 둔다.
+4. 갱신된 값을 `PROFILE.md` frontmatter에 저장한다.
 
 ---
 
@@ -155,7 +155,7 @@ g1gc	5	1	12
 - **만기 판정**: `study_day − last_study_day ≥ 조정 간격`. 조정 간격은 아래 "망각 곡선 반영" 규칙으로 카드마다 달라진다.
 - `last_study_day`가 null이면 무조건 만기다 (갓 생성된 카드 포함).
 - 만기 카드는 세션당 **상한 없이 전부** 출제한다.
-- 승격 = `mv` 한 번. state.tsv와 카드 파일은 건드리지 않는다.
+- 승격 = `mv` 한 번. 카드 파일 내용(frontmatter 통계)은 건드리지 않는다.
 - 강등은 즉시 하지 않는다. 설명·확인을 해주고 **재질문했을 때도 답하지 못하면** box1으로 `mv`.
 
 ---
@@ -164,7 +164,7 @@ g1gc	5	1	12
 
 라이트너 박스는 이미 에빙하우스 망각 곡선의 계단식 근사다(간격이 승격마다 늘어남). 여기에 곡선의 두 통찰만 얹는다. **곡선은 오직 "언제 다시 꺼낼지"에만 쓴다.**
 
-**단일 진실 규칙은 그대로다.** 난이도는 `state.tsv`에 저장하지 않고 기존 통계에서 **파생**한다.
+**단일 진실 규칙은 그대로다.** 난이도는 별도 저장하지 않고 카드 frontmatter의 통계에서 **파생**한다.
 
 ### 1. 난이도 계수 (카드마다, 통계에서 파생)
 
@@ -210,9 +210,9 @@ g1gc	5	1	12
 ## 세션 시작 절차
 
 1. `PROFILE.md` 읽기 (미설정이면 "세션 0 부트스트랩" 먼저)
-2. state.tsv 읽기
-3. 학습일(study_day) 규칙 적용
-4. `ls box*/` 로 만기 카드 전부 선정한 뒤, **연체율 내림차순**으로 정렬 (만기 판정도 카드별 조정 간격을 쓴다)
+2. 학습일(study_day) 규칙 적용 → `PROFILE.md` frontmatter 갱신
+3. `ls box*/` 로 카드 목록 확보 → 각 카드 파일 frontmatter 읽기 (times_correct, times_wrong, last_study_day)
+4. 만기 카드 선정 후 **연체율 내림차순**으로 정렬 (카드별 조정 간격 적용)
 5. 세션 안내 출력:
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -294,15 +294,14 @@ g1gc	5	1	12
 **어떤 경로로 진입했든 (일반 세션 / 면접 난사 / 자유 질문) 개념이 하나 다뤄질 때마다 이 프로세스를 실행한다.**
 
 0. **기존 카드 매핑 확인** — 다뤄진 개념이 box1~4에 이미 있는 카드와 겹치는지 먼저 확인한다.
-   - **겹치면**: 기존 카드를 대상으로 아래 1~6을 실행한다. 새 카드를 만들지 않는다.
+   - **겹치면**: 기존 카드를 대상으로 아래 1~5를 실행한다. 새 카드를 만들지 않는다.
    - **없으면**: 정답이면 stats만 갱신(새 카드 생성 안 함). 틀리거나 모르면 새 카드 생성 후 아래를 실행.
-1. **정답/오답 판정 반영**: state.tsv의 `times_correct` / `times_wrong` 갱신, `last_study_day = study_day`.
-2. **박스 이동**: 맞음 → 다음 박스로 `mv`. 틀림 → box1으로 `mv`. 카드 파일 내용은 건드리지 않는다.
-3. **새 카드 생성**: 막힌 항목이 기존 카드에 없을 때만 box1에 생성 (`type` 자동 판정), related 양방향 연결, state.tsv 등록.
+1. **정답/오답 판정 반영**: 카드 frontmatter의 `times_correct` / `times_wrong` 갱신, `last_study_day = study_day`.
+2. **박스 이동**: 맞음 → 다음 박스로 `mv`. 틀림 → box1으로 `mv`.
+3. **새 카드 생성**: 막힌 항목이 기존 카드에 없을 때만 box1에 생성 (`type` 자동 판정, stats 초기값 포함), related 양방향 연결.
 4. **related 업데이트**: 이번 대화에서 드러난 연결 관계를 양쪽 카드에 추가.
 5. **카드 내용 보강**: 새 관점·예문이 있으면 카드 하단에 추가.
-6. **state.tsv 저장** (카드 1개 끝날 때마다 — 세션 중단돼도 진행분 안전).
-7. 변경사항 한 줄 요약 출력.
+6. 변경사항 한 줄 요약 출력.
 
 git 커밋은 세션 전체가 끝났을 때 한 번만 한다.
 
@@ -321,6 +320,9 @@ category: TOEIC_Vocab
 type: recall
 related: []
 created: 2026-07-01
+times_correct: 0
+times_wrong: 0
+last_study_day: null
 ---
 
 # apparel
@@ -331,6 +333,7 @@ created: 2026-07-01
 - `type`은 `recall` / `concept` / `mixed` 중 하나. 코치가 자동 판정한다.
 - `tags` / `category`는 PROFILE.md의 주제 체계를 따른다.
 - id는 제목의 핵심어를 snake_case로 변환하고, 충돌 시 접미사를 붙인다.
+- 통계 필드(`times_correct`, `times_wrong`, `last_study_day`)는 카드 생성 시 초기값으로 포함한다.
 
 ---
 
@@ -338,7 +341,7 @@ created: 2026-07-01
 
 이 레포는 공개 템플릿 `happy-nut/study-template`에서 파생됐다. GitHub 템플릿은 fork가 아니라서
 **자동 동기화 연결이 없다.** 엔진(`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)과 **프로젝트 스코프 스킬(`.claude/skills/`)** 만 골라서 최신본을 받으면 된다.
-**`PROFILE.md`, `box*/`, `state.tsv`(= 사용자 데이터)은 절대 건드리지 않는다.**
+**`PROFILE.md`, `box*/`(= 사용자 데이터)은 절대 건드리지 않는다.**
 
 > 스킬은 **프로젝트 스코프**다 — 레포 안 `.claude/skills/`에 담겨 파생 레포마다 함께 간다. 유저 스코프(`~/.claude/skills/`)에 설치하지 않는다.
 
