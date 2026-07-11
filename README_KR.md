@@ -1,4 +1,4 @@
-# study-template
+# become
 
 *[English](README.md) · 한국어*
 
@@ -19,7 +19,7 @@
 ## 어떻게 쓰나요
 
 1. **이 레포를 템플릿으로 새 레포를 생성합니다** — GitHub "Use this template" 버튼, 또는
-   `gh repo create my-study --template happy-nut/study-template --private`
+   `gh repo create become-a-topic --template happy-nut/become --private`
 2. 새 레포에서 AI 코딩 에이전트(Claude Code · Codex · Cursor · Gemini CLI 등)를 실행하고 **"공부 시작하자"** 라고 하십시오.
 3. 코치가 무엇을 공부하는지 짧게 인터뷰하고 `PROFILE.md`를 채웁니다 (딱 한 번).
 4. 이후 묻거나 막히는 항목이 자동으로 카드가 되어 쌓이고, 라이트너 간격으로 다시 출제됩니다.
@@ -32,7 +32,6 @@
 | `CLAUDE.md` / `GEMINI.md` | 각 에이전트 진입점 (AGENTS.md 포인터) | ❌ |
 | `.claude/skills/` | **프로젝트 스코프** 스킬(예: `mock-interview`) — 레포에 함께 담겨 갑니다 | ❌ (엔진의 일부) |
 | `PROFILE.md` | 무엇을 공부하는가 (주제·목표·출제 범위) | ✅ 유일하게 채우는 파일 |
-| `state.tsv` | 카드별 통계 (박스 위치는 디렉토리가 진실) | 자동 |
 | `box1`~`box4` | 라이트너 박스 | 자동 |
 
 ## 특징
@@ -44,14 +43,16 @@
 
 ## 템플릿에 새 기능이 추가되면 (파생 레포 업데이트)
 
-GitHub 템플릿은 fork가 아니라서 **자동 동기화 연결이 없습니다.** 다만 엔진·스킬과 사용자 데이터가 파일 단위로 분리돼 있어, 그 파일만 골라 받으면 카드·프로필을 그대로 둔 채 업데이트됩니다. 엔진 버전은 `AGENTS.md` 맨 위 `<!-- 엔진 버전: X -->` 에 있습니다.
+파생 저장소에는 매주 `become`의 최신 엔진을 확인하는 GitHub Actions가 포함됩니다. 변경이 있으면 학습 기록을 직접 덮어쓰지 않고 **동기화 PR**을 엽니다. `PROFILE.md`와 `box1/`~`box4/`는 사용자 소유 파일이라 절대 동기화 대상에 포함되지 않습니다. 엔진 소유 경로는 `.become/engine-files.txt`가 정의합니다.
 
-**방법 A — git (권장, 스킬까지 함께 동기화)**
+**방법 A — 자동 PR (권장)**
+
+GitHub Actions의 `Sync Become engine`을 수동 실행하거나, 매주 생성되는 PR을 검토하고 병합합니다.
+
+**방법 B — 로컬에서 즉시 동기화**
 ```
-git remote add template https://github.com/happy-nut/study-template.git   # 최초 1회
-git fetch template
-git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md .claude
+./scripts/sync-become.sh
+git diff
 ```
 
-**방법 B — 코치에게 시키기**
-파생 레포에서 **"엔진 업데이트"** 라고 하시면, 코치가 최신 버전을 확인하고 뒤처져 있으면 엔진 파일과 **`.claude/skills/`** 까지 받아 덮어씁니다. (`PROFILE.md`·`box*`·`state.tsv`는 건드리지 않습니다.)
+또는 파생 저장소에서 코치에게 **"엔진 업데이트"**라고 하면 같은 도구를 실행합니다.

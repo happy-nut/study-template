@@ -1,6 +1,6 @@
 # 라이트너 학습 시스템 (범용 템플릿)
 
-<!-- 엔진 버전: 1.12.0 -->
+<!-- 엔진 버전: 1.13.0 -->
 
 > **이 파일이 학습 엔진의 정본(canonical)이다.** 어떤 AI 코딩 에이전트든 — Claude Code, OpenAI Codex,
 > Cursor, GitHub Copilot, Gemini CLI 등 — 이 `AGENTS.md`를 읽고 그대로 따르면 학습 코치로 동작한다.
@@ -341,23 +341,26 @@ last_study_day: null
 
 ## 엔진 업데이트 (템플릿에 새 기능이 추가됐을 때)
 
-이 레포는 공개 템플릿 `happy-nut/study-template`에서 파생됐다. GitHub 템플릿은 fork가 아니라서
-**자동 동기화 연결이 없다.** 엔진(`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)과 **프로젝트 스코프 스킬(`.claude/skills/`)** 만 골라서 최신본을 받으면 된다.
+이 레포는 공개 템플릿 `happy-nut/become`에서 파생됐다. 엔진 소유 경로는
+`.become/engine-files.txt`에 선언되어 있고, GitHub Actions가 매주 최신 엔진을 확인해 변경이 있으면 PR을 연다.
 **`PROFILE.md`, `box*/`(= 사용자 데이터)은 절대 건드리지 않는다.**
 
 > 스킬은 **프로젝트 스코프**다 — 레포 안 `.claude/skills/`에 담겨 파생 레포마다 함께 간다. 유저 스코프(`~/.claude/skills/`)에 설치하지 않는다.
 
-**방법 A — git (권장, 스킬까지 한 번에 동기화)**
+**방법 A — GitHub Actions 자동 PR (권장)**
+
+`Sync Become engine` 워크플로를 수동 실행하거나, 매주 생성되는 동기화 PR을 검토하고 병합한다.
+
+**방법 B — 로컬 동기화**
 ```
-git remote add template https://github.com/happy-nut/study-template.git   # 최초 1회
-git fetch template
-git checkout template/master -- AGENTS.md CLAUDE.md GEMINI.md .claude
+./scripts/sync-become.sh
+git diff
 ```
 엔진·스킬과 사용자 데이터가 파일 단위로 분리돼 있어 카드·프로필과 충돌하지 않는다.
 
-**방법 B — 코치에게 "엔진 업데이트" / "update engine"** 이라고 하면 코치는:
+**방법 C — 코치에게 "엔진 업데이트" / "update engine"** 이라고 하면 코치는:
 
-1. 최신 버전 확인: `curl -fsSL https://raw.githubusercontent.com/happy-nut/study-template/master/AGENTS.md | grep '엔진 버전'`
+1. 최신 버전 확인: `curl -fsSL https://raw.githubusercontent.com/happy-nut/become/master/AGENTS.md | grep '엔진 버전'`
 2. 맨 윗줄 `<!-- 엔진 버전: X -->` 과 비교. 같으면 "이미 최신(vX)"이라 알리고 종료.
-3. 다르면 위 **방법 A(git)** 를 실행해 엔진 3파일 + `.claude/skills/`까지 한 번에 받는다. (git이 없는 환경이면 raw URL로 `AGENTS.md`·`CLAUDE.md`·`GEMINI.md` 및 알려진 스킬 파일을 개별 다운로드)
+3. 다르면 `./scripts/sync-become.sh`를 실행해 manifest에 선언된 엔진 파일과 스킬을 받는다.
 4. 버전 변화(vX→vY)와 새로 생긴 규칙·스킬 요약을 출력한다. 필요하면 커밋한다.

@@ -1,3 +1,9 @@
+---
+study_day: 0
+last_session_date: ""
+session_count: 0
+---
+
 # 학습 프로필
 
 > 이 파일은 이 지식베이스가 **"무엇을"** 공부하는지만 정의한다.
