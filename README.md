@@ -20,8 +20,8 @@ The single source of truth for the coaching instructions is **`AGENTS.md`**. Maj
 
 1. **Create a new repo from this template** — the GitHub "Use this template" button, or
    `gh repo create become-a-topic --template happy-nut/become --private`
-2. In the new repo, launch an AI coding agent (Claude Code · Codex · Cursor · Gemini CLI, etc.) → say **"let's start studying"**
-3. The coach interviews you briefly about what you're studying and fills in `PROFILE.md` (one time only)
+2. In the new repo, launch an AI coding agent (Claude Code · Codex · Cursor · Gemini CLI, etc.) and say anything — on first contact the coach opens with **"What kind of expert do you want to become?"** and fills in `PROFILE.md` from your answers (one time only)
+3. When setup finishes, the coach hands you ready-to-paste prompts for what to type next (seed cards, start a session, …)
 4. From then on, whatever you ask about or get stuck on automatically becomes a card, and resurfaces at Leitner intervals
 
 ## Structure

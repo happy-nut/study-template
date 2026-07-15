@@ -20,8 +20,8 @@
 
 1. **이 레포를 템플릿으로 새 레포를 생성합니다** — GitHub "Use this template" 버튼, 또는
    `gh repo create become-a-topic --template happy-nut/become --private`
-2. 새 레포에서 AI 코딩 에이전트(Claude Code · Codex · Cursor · Gemini CLI 등)를 실행하고 **"공부 시작하자"** 라고 하십시오.
-3. 코치가 무엇을 공부하는지 짧게 인터뷰하고 `PROFILE.md`를 채웁니다 (딱 한 번).
+2. 새 레포에서 AI 코딩 에이전트(Claude Code · Codex · Cursor · Gemini CLI 등)를 실행하고 아무 말이나 건네십시오. 첫 응답에서 코치가 **"어떤 전문가가 되고 싶으세요?"** 로 먼저 물어보고, 답을 바탕으로 `PROFILE.md`를 채웁니다 (딱 한 번).
+3. 세팅이 끝나면 코치가 다음에 입력할 프롬프트(카드 시딩·세션 시작 등)를 복사해 쓰도록 바로 제시합니다.
 4. 이후 묻거나 막히는 항목이 자동으로 카드가 되어 쌓이고, 라이트너 간격으로 다시 출제됩니다.
 
 ## 구조
